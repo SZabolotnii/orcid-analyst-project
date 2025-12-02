@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Building2, IdCard } from 'lucide-react';
+import { User, Building2, Hash } from 'lucide-react';
 
 export default function ResearcherInfo({ orcidId, fullName, affiliation }) {
     return (
@@ -35,7 +35,7 @@ export default function ResearcherInfo({ orcidId, fullName, affiliation }) {
                         )}
                         
                         <div className="flex items-start gap-3">
-                            <IdCard className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+                            <Hash className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
                             <div>
                                 <p className="text-xs text-slate-500 uppercase tracking-wide">ORCID iD</p>
                                 <a 
