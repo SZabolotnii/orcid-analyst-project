@@ -145,19 +145,28 @@ export default function Home() {
             const allPublications = [];
             const aggregatedByYear = {};
             const aggregatedByType = {};
+            let successCount = 0;
+            let failedOrcids = [];
 
             for (const orcidId of orcidIds) {
-                const data = await fetchOrcidData(orcidId);
-                const { publications, byYear, byType } = parseWorks(data);
-                
-                allPublications.push(...publications);
-                
-                Object.entries(byYear).forEach(([year, count]) => {
-                    aggregatedByYear[year] = (aggregatedByYear[year] || 0) + count;
-                });
-                Object.entries(byType).forEach(([type, count]) => {
-                    aggregatedByType[type] = (aggregatedByType[type] || 0) + count;
-                });
+                try {
+                    const data = await fetchOrcidData(orcidId);
+                    const { publications, byYear, byType } = parseWorks(data);
+                    
+                    allPublications.push(...publications);
+                    
+                    Object.entries(byYear).forEach(([year, count]) => {
+                        aggregatedByYear[year] = (aggregatedByYear[year] || 0) + count;
+                    });
+                    Object.entries(byType).forEach(([type, count]) => {
+                        aggregatedByType[type] = (aggregatedByType[type] || 0) + count;
+                    });
+                    
+                    successCount++;
+                } catch (error) {
+                    console.warn(`Failed to fetch data for ORCID ${orcidId}:`, error);
+                    failedOrcids.push(orcidId);
+                }
             }
 
             const years = Object.keys(aggregatedByYear).map(Number).filter(y => y);
@@ -166,15 +175,21 @@ export default function Home() {
                 : '-';
 
             const result = {
-                totalResearchers: orcidIds.length,
+                totalResearchers: successCount,
                 totalPublications: allPublications.length,
-                avgPublications: allPublications.length / orcidIds.length,
+                avgPublications: successCount > 0 ? allPublications.length / successCount : 0,
                 byYear: aggregatedByYear,
                 byType: aggregatedByType,
                 publications: allPublications,
-                yearRange
+                yearRange,
+                failedOrcids
             };
 
+            console.log('Group analysis result:', result);
+            if (failedOrcids.length > 0) {
+                console.warn(`Warning: ${failedOrcids.length} ORCID(s) failed:`, failedOrcids);
+            }
+            
             setGroupResult(result);
         } catch (error) {
             console.error('Error analyzing batch:', error);
@@ -252,6 +267,7 @@ export default function Home() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="space-y-6"
                             >
+                                {console.log('Rendering group result:', groupResult)}
                                 <div className="flex items-center gap-2 text-slate-600">
                                     <BookOpen className="w-5 h-5" />
                                     <span className="font-medium">Агрегований аналіз групи</span>
