@@ -2,13 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Send, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Send, Loader2, Sparkles, AlertCircle, Database, Users, RotateCcw } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateWithGemini, isGeminiConfigured } from '@/lib/gemini';
 
-export default function ChatInterface() {
-    const [messages, setMessages] = useState([]);
+export default function ChatInterface({ analysisResult, groupResult, messages, setMessages }) {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [streamingText, setStreamingText] = useState('');
@@ -21,6 +20,13 @@ export default function ChatInterface() {
     useEffect(() => {
         scrollToBottom();
     }, [messages, streamingText]);
+
+    const handleClearChat = () => {
+        if (window.confirm('Розпочати нову розмову? Поточна історія буде видалена.')) {
+            setMessages([]);
+            setStreamingText('');
+        }
+    };
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
@@ -49,17 +55,19 @@ export default function ChatInterface() {
         setStreamingText('');
 
         try {
-            await generateWithGemini(
+            const finalText = await generateWithGemini(
                 userMessage,
                 (chunk, fullText) => {
                     setStreamingText(fullText);
                 },
-                messages
+                messages,
+                analysisResult,
+                groupResult
             );
 
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: streamingText
+                content: finalText
             }]);
             setStreamingText('');
 
@@ -81,6 +89,15 @@ export default function ChatInterface() {
         "Порівняй активність по роках"
     ];
 
+    const dataLoadedSuggestions = [
+        "Проаналізуй ці дані та дай висновки",
+        "Які тренди публікаційної активності?",
+        "Порівняй показники по роках",
+        "Які рекомендації для покращення?"
+    ];
+
+    const currentSuggestions = (analysisResult || groupResult) ? dataLoadedSuggestions : suggestions;
+
     return (
         <Card className="border-0 shadow-lg bg-white/80 backdrop-blur flex flex-col h-[600px]">
             {!isGeminiConfigured() && (
@@ -89,6 +106,56 @@ export default function ChatInterface() {
                     <div className="text-sm text-amber-800">
                         <strong>API не налаштовано:</strong> Додайте VITE_GEMINI_API_KEY у файл .env для активації AI асистента.
                     </div>
+                </div>
+            )}
+            
+            {messages.length > 0 && !analysisResult && !groupResult && (
+                <div className="bg-slate-50 border-b border-slate-200 p-3 flex items-center justify-between gap-2">
+                    <div className="text-sm text-slate-600">
+                        Історія розмови збережена
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearChat}
+                        className="text-slate-600 hover:text-slate-700 hover:bg-slate-100"
+                    >
+                        <RotateCcw className="w-4 h-4 mr-1" />
+                        Нова розмова
+                    </Button>
+                </div>
+            )}
+            
+            {(analysisResult || groupResult) && (
+                <div className="bg-indigo-50 border-b border-indigo-200 p-3 flex items-center justify-between gap-2">
+                    <div className="flex items-start gap-2 flex-1">
+                        {analysisResult ? (
+                            <>
+                                <Database className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                <div className="text-sm text-indigo-800">
+                                    <strong>Дані завантажено:</strong> ORCID {analysisResult.orcid_id} • {analysisResult.totalPublications} публікацій • {analysisResult.yearRange}
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <Users className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                <div className="text-sm text-indigo-800">
+                                    <strong>Дані завантажено:</strong> Група з {groupResult.totalResearchers} дослідників • {groupResult.totalPublications} публікацій • {groupResult.yearRange}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                    {messages.length > 0 && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleClearChat}
+                            className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100"
+                        >
+                            <RotateCcw className="w-4 h-4 mr-1" />
+                            Нова розмова
+                        </Button>
+                    )}
                 </div>
             )}
             
@@ -102,10 +169,13 @@ export default function ChatInterface() {
                             AI-аналітик публікацій
                         </h3>
                         <p className="text-slate-500 text-sm max-w-md mb-6">
-                            Запитайте про публікаційну активність науковця, надавши його ORCID ID
+                            {analysisResult || groupResult 
+                                ? "Запитайте про завантажені дані публікацій або виконайте новий аналіз"
+                                : "Спочатку виконайте аналіз на вкладці 'Ручний аналіз', потім поверніться сюди для AI-асистування"
+                            }
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
-                            {suggestions.map((suggestion, i) => (
+                            {currentSuggestions.map((suggestion, i) => (
                                 <button
                                     key={i}
                                     onClick={() => setInput(suggestion)}

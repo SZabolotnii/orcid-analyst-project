@@ -1,6 +1,6 @@
 // Google Gemini API Integration
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:streamGenerateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent';
 
 const SYSTEM_INSTRUCTION = `Ти - AI-аналітик публікаційної активності науковців. Твоя головна задача - допомагати аналізувати дані з ORCID (Open Researcher and Contributor ID).
 
@@ -25,14 +25,44 @@ const SYSTEM_INSTRUCTION = `Ти - AI-аналітик публікаційно�
  * @param {string} userMessage - User's message
  * @param {function} onChunk - Callback for each chunk of response
  * @param {Array} history - Previous messages for context
+ * @param {Object} analysisResult - Current single analysis data
+ * @param {Object} groupResult - Current group analysis data
  */
-export async function generateWithGemini(userMessage, onChunk, history = []) {
+export async function generateWithGemini(userMessage, onChunk, history = [], analysisResult = null, groupResult = null) {
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_gemini_api_key_here') {
         throw new Error('Gemini API key not configured. Please set VITE_GEMINI_API_KEY in .env file');
     }
 
     // Build contents array with history
     const contents = [];
+    
+    // Add system context with analysis data if available
+    let contextMessage = '';
+    
+    if (analysisResult) {
+        contextMessage = `\n\n📊 ДОСТУПНІ ДАНІ АНАЛІЗУ (одиночний дослідник):
+- ORCID ID: ${analysisResult.orcid_id}
+- Загальна кількість публікацій: ${analysisResult.totalPublications}
+- Діапазон років: ${analysisResult.yearRange}
+- Розподіл по роках: ${JSON.stringify(analysisResult.byYear, null, 2)}
+- Розподіл по типам: ${JSON.stringify(analysisResult.byType, null, 2)}
+- Список публікацій (топ-10): ${JSON.stringify(analysisResult.publications.slice(0, 10), null, 2)}
+
+Використовуй ці реальні дані для відповіді на запитання користувача.`;
+    }
+    
+    if (groupResult) {
+        contextMessage = `\n\n📊 ДОСТУПНІ ДАНІ АНАЛІЗУ (група дослідників):
+- Кількість дослідників: ${groupResult.totalResearchers}
+- Загальна кількість публікацій: ${groupResult.totalPublications}
+- Середня кількість публікацій: ${groupResult.avgPublications.toFixed(2)}
+- Діапазон років: ${groupResult.yearRange}
+- Розподіл по роках: ${JSON.stringify(groupResult.byYear, null, 2)}
+- Розподіл по типам: ${JSON.stringify(groupResult.byType, null, 2)}
+- Список публікацій (топ-10): ${JSON.stringify(groupResult.publications.slice(0, 10), null, 2)}
+
+Використовуй ці реальні дані для відповіді на запитання користувача.`;
+    }
     
     // Add history
     history.forEach(msg => {
@@ -42,10 +72,10 @@ export async function generateWithGemini(userMessage, onChunk, history = []) {
         });
     });
     
-    // Add current message
+    // Add current message with context
     contents.push({
         role: 'user',
-        parts: [{ text: userMessage }]
+        parts: [{ text: userMessage + contextMessage }]
     });
 
     const requestBody = {

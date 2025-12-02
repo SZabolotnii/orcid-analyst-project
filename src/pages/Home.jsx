@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, MessageSquare, BarChart3, Loader2 } from 'lucide-react';
@@ -13,6 +13,25 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState(false);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [groupResult, setGroupResult] = useState(null);
+    const [chatMessages, setChatMessages] = useState(() => {
+        // Завантажуємо історію з localStorage при ініціалізації
+        try {
+            const saved = localStorage.getItem('orcid-chat-history');
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            console.error('Failed to load chat history:', error);
+            return [];
+        }
+    });
+
+    // Зберігаємо історію в localStorage при кожній зміні
+    useEffect(() => {
+        try {
+            localStorage.setItem('orcid-chat-history', JSON.stringify(chatMessages));
+        } catch (error) {
+            console.error('Failed to save chat history:', error);
+        }
+    }, [chatMessages]);
 
     const fetchOrcidData = async (orcidId) => {
         const response = await fetch(`https://pub.orcid.org/v3.0/${orcidId}/works`, {
@@ -220,7 +239,12 @@ export default function Home() {
 
                     <TabsContent value="chat">
                         <div className="max-w-3xl mx-auto">
-                            <ChatInterface />
+                            <ChatInterface 
+                                analysisResult={analysisResult}
+                                groupResult={groupResult}
+                                messages={chatMessages}
+                                setMessages={setChatMessages}
+                            />
                         </div>
                     </TabsContent>
                 </Tabs>
