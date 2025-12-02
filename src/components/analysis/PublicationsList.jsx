@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExternalLink, Search, Filter } from 'lucide-react';
 
 export default function PublicationsList({ publications = [] }) {
@@ -69,81 +68,87 @@ export default function PublicationsList({ publications = [] }) {
                         />
                     </div>
                     <div className="flex gap-2">
-                        {/* Тип публікації */}
-                        <Select value={filterType} onValueChange={val => setFilterType(val)}>
-                            <SelectTrigger className="w-40 bg-white border border-slate-200 shadow-sm">
-                                <Filter className="w-4 h-4 mr-2 text-slate-400" />
-                                <SelectValue>{filterType === 'all' ? 'Всі типи' : formatType(filterType)}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Всі типи</SelectItem>
+                        {/* Фільтр по типу */}
+                        <div className="relative">
+                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            <select
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                                className="pl-9 pr-3 py-2 w-40 rounded-lg border border-slate-200 bg-white text-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+                            >
+                                <option value="all">Всі типи</option>
                                 {types.map(type => (
-                                    <SelectItem key={type} value={type}>
+                                    <option key={type} value={type}>
                                         {formatType(type)}
-                                    </SelectItem>
+                                    </option>
                                 ))}
-                            </SelectContent>
-                        </Select>
-                        {/* Рік */}
-                        <Select value={filterYear} onValueChange={val => setFilterYear(val)}>
-                            <SelectTrigger className="w-32 bg-white border border-slate-200 shadow-sm">
-                                <SelectValue>{filterYear === 'all' ? 'Всі роки' : filterYear}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Всі роки</SelectItem>
-                                {years.map(year => (
-                                    <SelectItem key={year} value={year.toString()}>
-                                        {year}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            </select>
+                        </div>
+                        {/* Фільтр по року */}
+                        <select
+                            value={filterYear}
+                            onChange={(e) => setFilterYear(e.target.value)}
+                            className="px-3 py-2 w-32 rounded-lg border border-slate-200 bg-white text-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+                        >
+                            <option value="all">Всі роки</option>
+                            {years.map(year => (
+                                <option key={year} value={year.toString()}>
+                                    {year}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
-                <div className="space-y-3">
-                    {displayed.map((pub, index) => (
-                        <div 
-                            key={index}
-                            className="p-4 rounded-xl bg-slate-50/50 hover:bg-slate-100/50 transition-colors"
-                        >
-                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="font-medium text-slate-800 line-clamp-2">
-                                        {pub.title || 'Без назви'}
-                                    </h4>
-                                    {pub.journal && (
-                                        <p className="text-sm text-slate-500 mt-1 truncate">
-                                            {pub.journal}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    {pub.year && (
-                                        <Badge variant="outline" className="font-mono">
-                                            {pub.year}
-                                        </Badge>
-                                    )}
-                                    {pub.type && (
-                                        <Badge className={getTypeColor(pub.type)}>
-                                            {formatType(pub.type)}
-                                        </Badge>
-                                    )}
-                                    {pub.doi && (
-                                        <a
-                                            href={`https://doi.org/${pub.doi}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-indigo-600 hover:text-indigo-800"
-                                        >
-                                            <ExternalLink className="w-4 h-4" />
-                                        </a>
-                                    )}
+                {displayed.length === 0 ? (
+                    <div className="py-12 text-center text-slate-400">
+                        Публікацій не знайдено
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {displayed.map((pub, index) => (
+                            <div 
+                                key={index}
+                                className="p-4 rounded-xl bg-slate-50/50 hover:bg-slate-100/50 transition-colors"
+                            >
+                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="font-medium text-slate-800 line-clamp-2">
+                                            {pub.title || 'Без назви'}
+                                        </h4>
+                                        {pub.journal && (
+                                            <p className="text-sm text-slate-500 mt-1 truncate">
+                                                {pub.journal}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        {pub.year && (
+                                            <Badge variant="outline" className="font-mono">
+                                                {pub.year}
+                                            </Badge>
+                                        )}
+                                        {pub.type && (
+                                            <Badge className={getTypeColor(pub.type)}>
+                                                {formatType(pub.type)}
+                                            </Badge>
+                                        )}
+                                        {pub.doi && (
+                                            <a
+                                                href={`https://doi.org/${pub.doi}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-indigo-600 hover:text-indigo-800"
+                                            >
+                                                <ExternalLink className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
 
                 {filtered.length > showCount && (
                     <Button
