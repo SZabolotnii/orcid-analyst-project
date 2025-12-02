@@ -2,10 +2,9 @@
   command = "npm run build"
   publish = "dist"
 
-[build.environment]
-  # Disable secrets scanning for VITE_ prefixed env vars
-  # as they are intentionally exposed in the client bundle
-  SECRETS_SCAN_OMIT_KEYS = "VITE_*"
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 [[redirects]]
   from = "/*"

@@ -1,6 +1,5 @@
-// Google Gemini API Integration
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent';
+// Gemini client that prefers serverless proxy and falls back to direct (dev)
+const SERVERLESS_URL = '/.netlify/functions/gemini';
 
 const SYSTEM_INSTRUCTION = `Ти - AI-аналітик публікаційної активності науковців. Твоя головна задача - допомагати аналізувати дані з ORCID (Open Researcher and Contributor ID).
 
@@ -29,14 +28,34 @@ const SYSTEM_INSTRUCTION = `Ти - AI-аналітик публікаційно�
  * @param {Object} groupResult - Current group analysis data
  */
 export async function generateWithGemini(userMessage, onChunk, history = [], analysisResult = null, groupResult = null) {
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_gemini_api_key_here') {
-        throw new Error('Gemini API key not configured. Please set VITE_GEMINI_API_KEY in .env file');
-    }
+    // Prefer calling serverless function to keep API key server-side
+    try {
+        const resp = await fetch(SERVERLESS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: userMessage, history, analysisResult, groupResult })
+        });
 
-    // Build contents array with history
-    const contents = [];
-    
-    // Add system context with analysis data if available
+        if (resp.ok) {
+            const data = await resp.json();
+            const text = data.text || '';
+            if (onChunk && text) onChunk(text, text);
+            return text;
+        }
+        const errData = await safeJson(resp);
+        throw new Error(errData?.error || `Gemini function error: ${resp.status}`);
+    } catch (serverErr) {
+        // Fallback for local dev without Netlify functions
+        console.warn('Falling back to direct Gemini call (dev only):', serverErr?.message);
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+            throw new Error('Gemini API не налаштовано. Додайте VITE_GEMINI_API_KEY у .env або запустіть через Netlify Functions.');
+        }
+
+        // Build contents array with history
+        const contents = [];
+        
+        // Add system context with analysis data if available
     let contextMessage = '';
     
     if (analysisResult) {
@@ -64,86 +83,47 @@ export async function generateWithGemini(userMessage, onChunk, history = [], ana
 Використовуй ці реальні дані для відповіді на запитання користувача.`;
     }
     
-    // Add history
-    history.forEach(msg => {
-        contents.push({
-            role: msg.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: msg.content }]
+        // Add history
+        history.forEach(msg => {
+            contents.push({
+                role: msg.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: msg.content }]
+            });
         });
-    });
-    
-    // Add current message with context
-    contents.push({
-        role: 'user',
-        parts: [{ text: userMessage + contextMessage }]
-    });
+        
+        // Add current message with context
+        contents.push({
+            role: 'user',
+            parts: [{ text: userMessage + contextMessage }]
+        });
 
-    const requestBody = {
-        contents,
-        systemInstruction: {
-            parts: [{ text: SYSTEM_INSTRUCTION }]
-        },
-        generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 2048,
-        }
-    };
-
-    try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}&alt=sse`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
+        const requestBody = {
+            contents,
+            systemInstruction: {
+                parts: [{ text: SYSTEM_INSTRUCTION }]
             },
+            generationConfig: {
+                temperature: 0.7,
+                topK: 40,
+                topP: 0.95,
+                maxOutputTokens: 2048,
+            }
+        };
+
+        const DIRECT_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+        const response = await fetch(`${DIRECT_URL}?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody),
         });
-
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || 'Failed to generate response');
+            const errorData = await safeJson(response);
+            throw new Error(errorData?.error?.message || 'Failed to generate response');
         }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullText = '';
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
-
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    try {
-                        const jsonStr = line.slice(6);
-                        if (jsonStr.trim() === '[DONE]') continue;
-                        
-                        const data = JSON.parse(jsonStr);
-                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                        
-                        if (text) {
-                            fullText += text;
-                            if (onChunk) {
-                                onChunk(text, fullText);
-                            }
-                        }
-                    } catch (e) {
-                        // Skip parsing errors for incomplete chunks
-                        console.debug('Skipping chunk:', e.message);
-                    }
-                }
-            }
-        }
-
-        return fullText;
-
-    } catch (error) {
-        console.error('Gemini API Error:', error);
-        throw error;
+        const data = await response.json();
+        const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+        if (onChunk && text) onChunk(text, text);
+        return text;
     }
 }
 
@@ -151,7 +131,9 @@ export async function generateWithGemini(userMessage, onChunk, history = [], ana
  * Check if Gemini API is configured
  */
 export function isGeminiConfigured() {
-    return GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_api_key_here';
+    // We rely on serverless function being configured in production.
+    // Fallback in dev checks VITE_GEMINI_API_KEY implicitly in generateWithGemini.
+    return true;
 }
 
 /**
@@ -161,4 +143,8 @@ export function extractOrcidId(text) {
     const orcidPattern = /\b\d{4}-\d{4}-\d{4}-\d{3}[0-9X]\b/;
     const match = text.match(orcidPattern);
     return match ? match[0] : null;
+}
+
+async function safeJson(resp) {
+    try { return await resp.json(); } catch { return null; }
 }
