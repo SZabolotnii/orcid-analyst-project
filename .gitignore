@@ -46,3 +46,6 @@ lerna-debug.log*
 # Archive files
 *.tar.gz
 *.zip
+
+# Local Netlify folder
+.netlify
