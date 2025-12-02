@@ -69,10 +69,11 @@ export default function PublicationsList({ publications = [] }) {
                         />
                     </div>
                     <div className="flex gap-2">
-                        <Select value={filterType} onValueChange={setFilterType}>
-                            <SelectTrigger className="w-40">
-                                <Filter className="w-4 h-4 mr-2" />
-                                <SelectValue placeholder="Тип" />
+                        {/* Тип публікації */}
+                        <Select value={filterType} onValueChange={val => setFilterType(val)}>
+                            <SelectTrigger className="w-40 bg-white border border-slate-200 shadow-sm">
+                                <Filter className="w-4 h-4 mr-2 text-slate-400" />
+                                <SelectValue>{filterType === 'all' ? 'Всі типи' : formatType(filterType)}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Всі типи</SelectItem>
@@ -83,9 +84,10 @@ export default function PublicationsList({ publications = [] }) {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Select value={filterYear} onValueChange={setFilterYear}>
-                            <SelectTrigger className="w-32">
-                                <SelectValue placeholder="Рік" />
+                        {/* Рік */}
+                        <Select value={filterYear} onValueChange={val => setFilterYear(val)}>
+                            <SelectTrigger className="w-32 bg-white border border-slate-200 shadow-sm">
+                                <SelectValue>{filterYear === 'all' ? 'Всі роки' : filterYear}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Всі роки</SelectItem>
