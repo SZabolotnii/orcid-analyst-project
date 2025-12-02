@@ -1,3 +1,14 @@
+---
+title: ORCID Analyst
+emoji: 📊
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
+
 # ORCID Analyst
 
 Аналіз публікаційної активності науковців на основі даних ORCID.
