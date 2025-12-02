@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, MessageSquare, BarChart3, Loader2 } from 'lucide-react';
 import OrcidInput from '../components/analysis/OrcidInput';
+import ResearcherInfo from '../components/analysis/ResearcherInfo';
 import StatsOverview from '../components/analysis/StatsOverview';
 import PublicationCharts from '../components/analysis/PublicationCharts';
 import PublicationsList from '../components/analysis/PublicationsList';
@@ -39,6 +40,26 @@ export default function Home() {
         });
         if (!response.ok) throw new Error('Не вдалося отримати дані з ORCID');
         return await response.json();
+    };
+
+    const fetchOrcidPerson = async (orcidId) => {
+        const response = await fetch(`https://pub.orcid.org/v3.0/${orcidId}/person`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) return null;
+        const data = await response.json();
+        
+        // Extract name
+        const givenNames = data.name?.['given-names']?.value || '';
+        const familyName = data.name?.['family-name']?.value || '';
+        const fullName = `${familyName} ${givenNames}`.trim();
+        
+        // Extract primary affiliation
+        const employments = data['employment-summary'] || [];
+        const primaryEmployment = employments[0];
+        const affiliation = primaryEmployment?.organization?.name || null;
+        
+        return { fullName, affiliation };
     };
 
     const parseWorks = (data) => {
@@ -83,8 +104,12 @@ export default function Home() {
         setAnalysisResult(null);
 
         try {
-            const data = await fetchOrcidData(orcidId);
-            const { publications, byYear, byType } = parseWorks(data);
+            const [worksData, personData] = await Promise.all([
+                fetchOrcidData(orcidId),
+                fetchOrcidPerson(orcidId)
+            ]);
+            
+            const { publications, byYear, byType } = parseWorks(worksData);
             
             const years = Object.keys(byYear).map(Number).filter(y => y);
             const yearRange = years.length > 0 
@@ -93,6 +118,8 @@ export default function Home() {
 
             const result = {
                 orcid_id: orcidId,
+                fullName: personData?.fullName || null,
+                affiliation: personData?.affiliation || null,
                 totalPublications: publications.length,
                 byYear,
                 byType,
@@ -202,10 +229,11 @@ export default function Home() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="space-y-6"
                             >
-                                <div className="flex items-center gap-2 text-slate-600">
-                                    <BookOpen className="w-5 h-5" />
-                                    <span className="font-medium">ORCID: {analysisResult.orcid_id}</span>
-                                </div>
+                                <ResearcherInfo 
+                                    orcidId={analysisResult.orcid_id}
+                                    fullName={analysisResult.fullName}
+                                    affiliation={analysisResult.affiliation}
+                                />
                                 
                                 <StatsOverview stats={analysisResult} isGroup={false} />
                                 <PublicationCharts 
