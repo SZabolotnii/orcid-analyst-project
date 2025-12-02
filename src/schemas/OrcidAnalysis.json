@@ -1,0 +1,50 @@
+{
+  "name": "OrcidAnalysis",
+  "type": "object",
+  "properties": {
+    "orcid_id": { 
+      "type": "string", 
+      "description": "ORCID identifier" 
+    },
+    "full_name": { 
+      "type": "string", 
+      "description": "Researcher's full name" 
+    },
+    "total_publications": { 
+      "type": "number", 
+      "description": "Total number of publications" 
+    },
+    "publications_by_year": { 
+      "type": "object", 
+      "description": "Publications count per year" 
+    },
+    "publications_by_type": { 
+      "type": "object", 
+      "description": "Publications count per type" 
+    },
+    "publications_list": {
+      "type": "array",
+      "description": "List of all publications with details",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "year": { "type": "number" },
+          "type": { "type": "string" },
+          "doi": { "type": "string" },
+          "journal": { "type": "string" }
+        }
+      }
+    },
+    "analysis_date": { 
+      "type": "string", 
+      "format": "date-time", 
+      "description": "When the analysis was performed" 
+    },
+    "group_id": { 
+      "type": "string", 
+      "description": "Group identifier for batch analysis" 
+    }
+  },
+  "required": ["orcid_id"]
+}

@@ -1,0 +1,36 @@
+{
+  "name": "AnalysisGroup",
+  "type": "object",
+  "properties": {
+    "name": { 
+      "type": "string", 
+      "description": "Group name (e.g., department name)" 
+    },
+    "total_researchers": { 
+      "type": "number", 
+      "description": "Number of researchers in group" 
+    },
+    "total_publications": { 
+      "type": "number", 
+      "description": "Total publications across all researchers" 
+    },
+    "avg_publications": { 
+      "type": "number", 
+      "description": "Average publications per researcher" 
+    },
+    "aggregated_by_year": { 
+      "type": "object", 
+      "description": "Total publications per year for the group" 
+    },
+    "aggregated_by_type": { 
+      "type": "object", 
+      "description": "Total publications per type for the group" 
+    },
+    "orcid_ids": { 
+      "type": "array", 
+      "description": "List of ORCID IDs in this group", 
+      "items": { "type": "string" } 
+    }
+  },
+  "required": ["name"]
+}

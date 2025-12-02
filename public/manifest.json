@@ -1,0 +1,21 @@
+{
+  "name": "ORCID Analyst",
+  "short_name": "ORCID Analyst",
+  "description": "Аналіз публікаційної активності науковців на основі ORCID даних",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
