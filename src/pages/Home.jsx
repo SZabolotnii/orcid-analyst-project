@@ -102,6 +102,7 @@ export default function Home() {
     const handleSingleAnalysis = async (orcidId) => {
         setIsLoading(true);
         setAnalysisResult(null);
+        setGroupResult(null); // Clear group analysis when starting single
 
         try {
             const [worksData, personData] = await Promise.all([
@@ -137,6 +138,7 @@ export default function Home() {
 
     const handleBatchAnalysis = async (orcidIds) => {
         setIsLoading(true);
+        setAnalysisResult(null); // Clear single analysis when starting batch
         setGroupResult(null);
 
         try {
