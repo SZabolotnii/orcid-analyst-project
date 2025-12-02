@@ -1,32 +1,27 @@
-# Use Node.js LTS version
-FROM node:18-alpine as build
+# Dockerfile for HuggingFace Spaces deployment
+# Serves static Vite build + Express API proxy for Gemini
 
-# Set working directory
+FROM node:18-alpine
+
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (including devDependencies for build)
+RUN npm ci
 
-# Copy source code
+# Copy application files
 COPY . .
 
-# Build the application
+# Build the Vite app
 RUN npm run build
 
-# Production stage - serve with nginx
-FROM nginx:alpine
+# Install express for runtime
+RUN npm install express
 
-# Copy built files from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
+# Expose port 7860 (HuggingFace Spaces default)
+EXPOSE 7860
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port
-EXPOSE 80
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start the server
+CMD ["node", "server.js"]

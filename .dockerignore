@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+npm-debug.log
+package-lock.json
+
+# Build output (will be generated in container)
+dist
+
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Netlify specific (not needed for HuggingFace)
+.netlify
+netlify
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+
+# Misc
+.prettierrc
+.eslintrc*

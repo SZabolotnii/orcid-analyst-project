@@ -1,5 +1,14 @@
-// Gemini client that prefers serverless proxy and falls back to direct (dev)
-const SERVERLESS_URL = '/.netlify/functions/gemini';
+// Gemini client that works with both Netlify Functions and HuggingFace Spaces
+// Auto-detects environment and uses appropriate endpoint
+
+const NETLIFY_URL = '/.netlify/functions/gemini';
+const HUGGINGFACE_URL = '/api/gemini';
+
+// Detect if running on HuggingFace Spaces
+const isHuggingFace = window.location.hostname.includes('huggingface.co') || 
+                      window.location.hostname.includes('hf.space');
+
+const SERVERLESS_URL = isHuggingFace ? HUGGINGFACE_URL : NETLIFY_URL;
 
 const SYSTEM_INSTRUCTION = `Ти - AI-аналітик публікаційної активності науковців. Твоя головна задача - допомагати аналізувати дані з ORCID (Open Researcher and Contributor ID).
 
