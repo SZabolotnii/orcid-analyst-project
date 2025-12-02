@@ -2,13 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Send, Loader2, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateWithGemini, isGeminiConfigured } from '@/lib/gemini';
 
-export default function ChatInterface({ onSendMessage, isLoading = false }) {
+export default function ChatInterface() {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [streamingText, setStreamingText] = useState('');
     const messagesEndRef = useRef(null);
 
     const scrollToBottom = () => {
@@ -17,10 +20,22 @@ export default function ChatInterface({ onSendMessage, isLoading = false }) {
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [messages, streamingText]);
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
+
+        if (!isGeminiConfigured()) {
+            setMessages(prev => [...prev, 
+                { role: 'user', content: input.trim() },
+                { 
+                    role: 'assistant', 
+                    content: '⚠️ Gemini API не налаштовано. Будь ласка, додайте VITE_GEMINI_API_KEY у файл .env\n\nОтримати API ключ можна тут: https://aistudio.google.com/app/apikey' 
+                }
+            ]);
+            setInput('');
+            return;
+        }
 
         const userMessage = input.trim();
         setInput('');
@@ -30,8 +45,32 @@ export default function ChatInterface({ onSendMessage, isLoading = false }) {
             content: userMessage 
         }]);
 
-        if (onSendMessage) {
-            await onSendMessage(userMessage);
+        setIsLoading(true);
+        setStreamingText('');
+
+        try {
+            await generateWithGemini(
+                userMessage,
+                (chunk, fullText) => {
+                    setStreamingText(fullText);
+                },
+                messages
+            );
+
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: streamingText
+            }]);
+            setStreamingText('');
+
+        } catch (error) {
+            console.error('Chat error:', error);
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `❌ Помилка: ${error.message}\n\nПеревірте налаштування API ключа або спробуйте пізніше.`
+            }]);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -44,6 +83,15 @@ export default function ChatInterface({ onSendMessage, isLoading = false }) {
 
     return (
         <Card className="border-0 shadow-lg bg-white/80 backdrop-blur flex flex-col h-[600px]">
+            {!isGeminiConfigured() && (
+                <div className="bg-amber-50 border-b border-amber-200 p-3 flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-amber-800">
+                        <strong>API не налаштовано:</strong> Додайте VITE_GEMINI_API_KEY у файл .env для активації AI асистента.
+                    </div>
+                </div>
+            )}
+            
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-6">
@@ -80,10 +128,19 @@ export default function ChatInterface({ onSendMessage, isLoading = false }) {
                                 <MessageBubble message={msg} />
                             </motion.div>
                         ))}
+                        
+                        {streamingText && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                            >
+                                <MessageBubble message={{ role: 'assistant', content: streamingText }} isStreaming={true} />
+                            </motion.div>
+                        )}
                     </AnimatePresence>
                 )}
                 
-                {isLoading && (
+                {isLoading && !streamingText && (
                     <div className="flex items-center gap-2 text-slate-500">
                         <Loader2 className="w-4 h-4 animate-spin" />
                         <span className="text-sm">Аналізую...</span>
@@ -109,7 +166,7 @@ export default function ChatInterface({ onSendMessage, isLoading = false }) {
                         disabled={isLoading || !input.trim()}
                         className="bg-indigo-600 hover:bg-indigo-700"
                     >
-                        <Send className="w-4 h-4" />
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                 </form>
             </div>
