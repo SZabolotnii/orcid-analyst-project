@@ -82,6 +82,14 @@ export default function StatsOverview({ stats, isGroup = false }) {
                 lightColor: 'bg-purple-50'
             },
             {
+                label: 'Scopus + WoS',
+                value: `${stats.indexingStats.bothIndexed}/${stats.indexingStats.total}`,
+                subValue: `${stats.indexingStats.bothPercentage.toFixed(1)}%`,
+                icon: CheckCircle,
+                color: 'bg-orange-500',
+                lightColor: 'bg-orange-50'
+            },
+            {
                 label: 'Індексовано',
                 value: `${stats.indexingStats.indexed}/${stats.indexingStats.total}`,
                 subValue: `${stats.indexingStats.indexedPercentage.toFixed(1)}%`,
@@ -93,7 +101,7 @@ export default function StatsOverview({ stats, isGroup = false }) {
     ];
 
     return (
-        <div className={`grid gap-4 ${isGroup ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+        <div className={`grid gap-4 ${isGroup ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
             {items.map((item, index) => (
                 <motion.div
                     key={item.label}

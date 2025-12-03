@@ -164,17 +164,26 @@ export default function PublicationsList({ publications = [] }) {
                                                     DOI
                                                 </Badge>
                                             )}
-                                            {pub.hasScopus && (
-                                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                            {pub.hasScopus && pub.hasWos ? (
+                                                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200 font-semibold">
                                                     <Database className="w-3 h-3 mr-1" />
-                                                    Scopus
+                                                    Scopus + WoS
                                                 </Badge>
-                                            )}
-                                            {pub.hasWos && (
-                                                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                                                    <Globe className="w-3 h-3 mr-1" />
-                                                    WoS
-                                                </Badge>
+                                            ) : (
+                                                <>
+                                                    {pub.hasScopus && (
+                                                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                                            <Database className="w-3 h-3 mr-1" />
+                                                            Scopus
+                                                        </Badge>
+                                                    )}
+                                                    {pub.hasWos && (
+                                                        <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                                            <Globe className="w-3 h-3 mr-1" />
+                                                            WoS
+                                                        </Badge>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>
