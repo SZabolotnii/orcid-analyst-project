@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, TrendingUp, Calendar, Users } from 'lucide-react';
+import { FileText, TrendingUp, Calendar, Users, Link2, Database, Globe, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function StatsOverview({ stats, isGroup = false }) {
@@ -54,11 +54,46 @@ export default function StatsOverview({ stats, isGroup = false }) {
             icon: Calendar,
             color: 'bg-amber-500',
             lightColor: 'bg-amber-50'
-        }
+        },
+        // Indexing stats
+        ...(stats.indexingStats ? [
+            {
+                label: 'DOI Coverage',
+                value: `${stats.indexingStats.withDoi}/${stats.indexingStats.total}`,
+                subValue: `${stats.indexingStats.doiPercentage.toFixed(1)}%`,
+                icon: Link2,
+                color: 'bg-green-500',
+                lightColor: 'bg-green-50'
+            },
+            {
+                label: 'Scopus',
+                value: `${stats.indexingStats.scopusIndexed}/${stats.indexingStats.total}`,
+                subValue: `${stats.indexingStats.scopusPercentage.toFixed(1)}%`,
+                icon: Database,
+                color: 'bg-blue-500',
+                lightColor: 'bg-blue-50'
+            },
+            {
+                label: 'Web of Science',
+                value: `${stats.indexingStats.wosIndexed}/${stats.indexingStats.total}`,
+                subValue: `${stats.indexingStats.wosPercentage.toFixed(1)}%`,
+                icon: Globe,
+                color: 'bg-purple-500',
+                lightColor: 'bg-purple-50'
+            },
+            {
+                label: 'Індексовано',
+                value: `${stats.indexingStats.indexed}/${stats.indexingStats.total}`,
+                subValue: `${stats.indexingStats.indexedPercentage.toFixed(1)}%`,
+                icon: CheckCircle,
+                color: 'bg-teal-500',
+                lightColor: 'bg-teal-50'
+            }
+        ] : [])
     ];
 
     return (
-        <div className={`grid gap-4 ${isGroup ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
+        <div className={`grid gap-4 ${isGroup ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
             {items.map((item, index) => (
                 <motion.div
                     key={item.label}
@@ -76,6 +111,11 @@ export default function StatsOverview({ stats, isGroup = false }) {
                                     <p className="text-2xl font-bold text-slate-800">
                                         {item.value}
                                     </p>
+                                    {item.subValue && (
+                                        <p className="text-sm text-slate-600 mt-1">
+                                            {item.subValue}
+                                        </p>
+                                    )}
                                 </div>
                                 <div className={`p-3 rounded-xl ${item.lightColor}`}>
                                     <item.icon className={`w-5 h-5 ${item.color.replace('bg-', 'text-')}`} />

@@ -111,13 +111,28 @@ export default function Home() {
         });
 
         // Calculate indexing statistics
+        const total = publications.length;
+        const withDoi = publications.filter(p => p.doi).length;
+        const scopusIndexed = publications.filter(p => p.hasScopus).length;
+        const wosIndexed = publications.filter(p => p.hasWos).length;
+        const bothIndexed = publications.filter(p => p.hasScopus && p.hasWos).length;
+        const indexed = publications.filter(p => p.hasScopus || p.hasWos).length;
+        const notIndexed = publications.filter(p => !p.hasScopus && !p.hasWos).length;
+
         const indexingStats = {
-            total: publications.length,
-            withDoi: publications.filter(p => p.doi).length,
-            scopusIndexed: publications.filter(p => p.hasScopus).length,
-            wosIndexed: publications.filter(p => p.hasWos).length,
-            bothIndexed: publications.filter(p => p.hasScopus && p.hasWos).length,
-            notIndexed: publications.filter(p => !p.hasScopus && !p.hasWos).length
+            total,
+            withDoi,
+            doiPercentage: total > 0 ? (withDoi / total) * 100 : 0,
+            scopusIndexed,
+            scopusPercentage: total > 0 ? (scopusIndexed / total) * 100 : 0,
+            wosIndexed,
+            wosPercentage: total > 0 ? (wosIndexed / total) * 100 : 0,
+            bothIndexed,
+            bothPercentage: total > 0 ? (bothIndexed / total) * 100 : 0,
+            indexed,
+            indexedPercentage: total > 0 ? (indexed / total) * 100 : 0,
+            notIndexed,
+            notIndexedPercentage: total > 0 ? (notIndexed / total) * 100 : 0
         };
 
         return { publications, byYear, byType, indexingStats };
