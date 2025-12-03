@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Search, Filter } from 'lucide-react';
+import { ExternalLink, Search, Filter, Database, Globe, Link2 } from 'lucide-react';
 
 export default function PublicationsList({ publications = [] }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('all');
     const [filterYear, setFilterYear] = useState('all');
+    const [filterIndexing, setFilterIndexing] = useState('all'); // NEW: Indexing filter
     const [showCount, setShowCount] = useState(10);
 
     const types = [...new Set(publications.map(p => p.type).filter(Boolean))];
@@ -19,7 +20,24 @@ export default function PublicationsList({ publications = [] }) {
             pub.title?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = filterType === 'all' || pub.type === filterType;
         const matchesYear = filterYear === 'all' || pub.year?.toString() === filterYear;
-        return matchesSearch && matchesType && matchesYear;
+        
+        // NEW: Indexing filter logic
+        let matchesIndexing = true;
+        if (filterIndexing === 'doi') {
+            matchesIndexing = !!pub.doi;
+        } else if (filterIndexing === 'scopus') {
+            matchesIndexing = pub.hasScopus === true;
+        } else if (filterIndexing === 'wos') {
+            matchesIndexing = pub.hasWos === true;
+        } else if (filterIndexing === 'both') {
+            matchesIndexing = pub.hasScopus === true && pub.hasWos === true;
+        } else if (filterIndexing === 'indexed') {
+            matchesIndexing = pub.hasScopus === true || pub.hasWos === true;
+        } else if (filterIndexing === 'not-indexed') {
+            matchesIndexing = !pub.hasScopus && !pub.hasWos;
+        }
+        
+        return matchesSearch && matchesType && matchesYear && matchesIndexing;
     });
 
     const displayed = filtered.slice(0, showCount);
@@ -67,7 +85,7 @@ export default function PublicationsList({ publications = [] }) {
                             className="pl-10"
                         />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                         {/* Фільтр по типу */}
                         <div className="relative">
                             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -97,6 +115,23 @@ export default function PublicationsList({ publications = [] }) {
                                 </option>
                             ))}
                         </select>
+                        {/* NEW: Фільтр по індексації */}
+                        <div className="relative">
+                            <Database className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            <select
+                                value={filterIndexing}
+                                onChange={(e) => setFilterIndexing(e.target.value)}
+                                className="pl-9 pr-3 py-2 w-44 rounded-lg border border-slate-200 bg-white text-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+                            >
+                                <option value="all">Всі публікації</option>
+                                <option value="doi">Тільки з DOI</option>
+                                <option value="scopus">Scopus</option>
+                                <option value="wos">Web of Science</option>
+                                <option value="both">Scopus + WoS</option>
+                                <option value="indexed">Індексовані</option>
+                                <option value="not-indexed">Не індексовані</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -121,6 +156,27 @@ export default function PublicationsList({ publications = [] }) {
                                                 {pub.journal}
                                             </p>
                                         )}
+                                        {/* Indexing badges */}
+                                        <div className="flex gap-1.5 mt-2 flex-wrap">
+                                            {pub.doi && (
+                                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                                    <Link2 className="w-3 h-3 mr-1" />
+                                                    DOI
+                                                </Badge>
+                                            )}
+                                            {pub.hasScopus && (
+                                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                                    <Database className="w-3 h-3 mr-1" />
+                                                    Scopus
+                                                </Badge>
+                                            )}
+                                            {pub.hasWos && (
+                                                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                                    <Globe className="w-3 h-3 mr-1" />
+                                                    WoS
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex items-center gap-2 flex-shrink-0">
                                         {pub.year && (
@@ -139,6 +195,7 @@ export default function PublicationsList({ publications = [] }) {
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-indigo-600 hover:text-indigo-800"
+                                                title="Переглянути DOI"
                                             >
                                                 <ExternalLink className="w-4 h-4" />
                                             </a>

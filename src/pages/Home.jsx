@@ -76,9 +76,19 @@ export default function Home() {
             const title = summary.title?.title?.value || 'Без назви';
             
             let doi = null;
+            let scopusEid = null;
+            let wosUid = null;
+            
             (summary['external-ids']?.['external-id'] || []).forEach(id => {
-                if (id['external-id-type'] === 'doi') {
-                    doi = id['external-id-value'];
+                const idType = id['external-id-type']?.toLowerCase();
+                const idValue = id['external-id-value'];
+                
+                if (idType === 'doi') {
+                    doi = idValue;
+                } else if (idType === 'eid') {
+                    scopusEid = idValue;
+                } else if (idType === 'wosuid') {
+                    wosUid = idValue;
                 }
             });
 
@@ -87,7 +97,11 @@ export default function Home() {
                 year: year ? parseInt(year) : null,
                 type,
                 doi,
-                journal: summary['journal-title']?.value || null
+                journal: summary['journal-title']?.value || null,
+                scopusEid,
+                wosUid,
+                hasScopus: !!scopusEid,
+                hasWos: !!wosUid
             });
 
             if (year) {
@@ -96,7 +110,17 @@ export default function Home() {
             byType[type] = (byType[type] || 0) + 1;
         });
 
-        return { publications, byYear, byType };
+        // Calculate indexing statistics
+        const indexingStats = {
+            total: publications.length,
+            withDoi: publications.filter(p => p.doi).length,
+            scopusIndexed: publications.filter(p => p.hasScopus).length,
+            wosIndexed: publications.filter(p => p.hasWos).length,
+            bothIndexed: publications.filter(p => p.hasScopus && p.hasWos).length,
+            notIndexed: publications.filter(p => !p.hasScopus && !p.hasWos).length
+        };
+
+        return { publications, byYear, byType, indexingStats };
     };
 
     const handleSingleAnalysis = async (orcidId) => {
@@ -110,7 +134,7 @@ export default function Home() {
                 fetchOrcidPerson(orcidId)
             ]);
             
-            const { publications, byYear, byType } = parseWorks(worksData);
+            const { publications, byYear, byType, indexingStats } = parseWorks(worksData);
             
             const years = Object.keys(byYear).map(Number).filter(y => y);
             const yearRange = years.length > 0 
@@ -125,7 +149,8 @@ export default function Home() {
                 byYear,
                 byType,
                 publications,
-                yearRange
+                yearRange,
+                indexingStats
             };
 
             setAnalysisResult(result);
@@ -151,7 +176,7 @@ export default function Home() {
             for (const orcidId of orcidIds) {
                 try {
                     const data = await fetchOrcidData(orcidId);
-                    const { publications, byYear, byType } = parseWorks(data);
+                    const { publications, byYear, byType, indexingStats } = parseWorks(data);
                     
                     allPublications.push(...publications);
                     
