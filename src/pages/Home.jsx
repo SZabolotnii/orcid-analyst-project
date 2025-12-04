@@ -79,7 +79,8 @@ export default function Home() {
             let scopusEid = null;
             let wosUid = null;
             
-            (summary['external-ids']?.['external-id'] || []).forEach(id => {
+            // External IDs are at the group level, not in work-summary
+            (group['external-ids']?.['external-id'] || []).forEach(id => {
                 const idType = id['external-id-type']?.toLowerCase();
                 const idValue = id['external-id-value'];
                 
